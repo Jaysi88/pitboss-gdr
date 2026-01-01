@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pit Boss Assistant (Offline)</title>
+    <style>
+        :root {
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            --blue-600: #2563eb;
+            --green-600: #16a34a;
+            --red-600: #dc2626;
+            --orange-500: #f97316;
+            --yellow-400: #facc15;
+            --white: #ffffff;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--slate-100);
+            color: var(--slate-900);
+            margin: 0;
+            padding: 0;
+            padding-bottom: 60px; /* Space for footer */
+        }
+
+        /* Navigation */
+        nav {
+            background-color: var(--slate-900);
+            color: var(--white);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+            height: 64px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: bold;
+            font-size: 1.25rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none; /* Mobile menu hidden by default */
+            }
+            .nav-links.active {
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                top: 64px;
+                left: 0;
+                right: 0;
+                background-color: var(--slate-800);
+                padding: 1rem;
+            }
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--slate-300);
+            cursor: pointer;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background-color: var(--slate-700);
+            color: var(--yellow-400);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-btn { display: block; }
+        }
+
+        /* Layout */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            border: 1px solid var(--slate-200);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-icon {
+            padding: 0.75rem;
+            border-radius: 9999px;
+            width: fit-content;
+            margin-bottom: 1rem;
+        }
+
+        /* Components */
+        .btn-primary {
+            background-color: var(--blue-600);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            width: 100%;
+        }
+
+        .btn-danger {
+            background-color: var(--red-600);
+            color: white;
+            border: none;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+        }
+        
+        .btn-secondary {
+            background-color: var(--slate-600);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 500;
+            width: 100%;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--slate-300);
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+            background-color: white;
+        }
+
+        .list-item {
+            padding: 0.75rem;
+            border: 1px solid var(--slate-200);
+            border-radius: 0.5rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+        }
+
+        .list-item.checked {
+            background-color: #f0fdf4;
+            border-color: #bbf7d0;
+        }
+
+        .list-item.checked span {
+            text-decoration: line-through;
+            color: var(--slate-300);
+        }
+
+        /* Content Sections */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* Icons */
+        svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+        }
+
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--green-600);
+            color: white;
+            text-align: center;
+            padding: 0.25rem;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Nav -->
+    <nav>
+        <div class="nav-container">
+            <div class="logo">
+                <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                <span>PitBoss<span style="color: var(--yellow-400)">Assist</span></span>
+            </div>
+            <button class="mobile-menu-btn" onclick="toggleMenu()">
+                <svg viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12"></line><line x1="4" y1="6" x2="20" y2="6"></line><line x1="4" y1="18" x2="20" y2="18"></line></svg>
+            </button>
+            <div class="nav-links" id="navLinks">
+                <button class="nav-btn active" onclick="switchTab('dashboard')">Dashboard</button>
+                <button class="nav-btn" onclick="switchTab('journal')">Journal & Reports</button>
+                <button class="nav-btn" onclick="switchTab('handbook')">Handbook</button>
+                <button class="nav-btn" onclick="switchTab('checklists')">Checklists</button>
+                <button class="nav-btn" onclick="switchTab('codes')">Codes</button>
+                <button class="nav-btn" onclick="switchTab('tools')">Tools</button>
+                <button class="nav-btn" onclick="switchTab('settings')">Backup</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="container">
+
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="section active">
+            <h1 style="font-size: 1.875rem; font-weight: bold; margin-bottom: 0.5rem;">Pit Manager Dashboard</h1>
+            <p style="color: var(--slate-600); margin-bottom: 2rem;">Welcome. Select a tool to begin.</p>
+
+            <div class="grid">
+                <div class="card" onclick="switchTab('handbook')">
+                    <div class="card-icon" style="background: #dbeafe; color: #2563eb;"><svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg></div>
+                    <h3 style="font-weight: bold; margin: 0;">Handbook</h3>
+                    <p style="font-size: 0.875rem; color: var(--slate-600);">Training manual & procedures.</p>
+                </div>
+                <div class="card" onclick="switchTab('journal')">
+                    <div class="card-icon" style="background: #fee2e2; color: #dc2626;"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></div>
+                    <h3 style="font-weight: bold; margin: 0;">Journal & Incidents</h3>
+                    <p style="font-size: 0.875rem; color: var(--slate-600);">Daily notes, Incidents & Reminders.</p>
+                </div>
+                <div class="card" onclick="switchTab('checklists')">
+                    <div class="card-icon" style="background: #dcfce7; color: #16a34a;"><svg viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg></div>
+                    <h3 style="font-weight: bold; margin: 0;">Checklists</h3>
+                    <p style="font-size: 0.875rem; color: var(--slate-600);">Open/Close Pit & Tables.</p>
+                </div>
+                <div class="card" onclick="switchTab('tools')">
+                    <div class="card-icon" style="background: #ffedd5; color: #ea580c;"><svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"></rect><line x1="8" y1="6" x2="16" y2="6"></line><line x1="16" y1="14" x2="16" y2="18"></line></svg></div>
+                    <h3 style="font-weight: bold; margin: 0;">Tools</h3>
+                    <p style="font-size: 0.875rem; color: var(--slate-600);">Win % Calc & Schedule.</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 2rem; background: #fefce8; border: 1px solid #fef08a; padding: 1.5rem; border-radius: 0.75rem;">
+                <h2 style="color: #854d0e; font-weight: bold; display: flex; align-items: center; gap: 0.5rem; margin-top: 0;">
+                    <svg viewBox="0 0 24 24" style="width: 20px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    Emergency Quick Actions
+                </h2>
+                <div class="grid" style="margin-top: 1rem;">
+                    <div>
+                        <strong>Call Surveillance When:</strong>
+                        <ul style="font-size: 0.875rem; margin-top: 0.5rem; padding-left: 1.25rem;">
+                            <li>Player disputes / Dealing errors</li>
+                            <li>Opening Chip Machines</li>
+                            <li>Resealing Shoes</li>
+                            <li>Royal/Straight Flush</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <strong>Function Distress (TU3):</strong>
+                        <ul style="font-size: 0.875rem; margin-top: 0.5rem; padding-left: 1.25rem;">
+                            <li>Pit Manager needed for Dispute</li>
+                            <li>Royal/Straight Flush presented</li>
+                            <li>Chips/Cards dropped on floor</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- JOURNAL -->
+        <div id="journal" class="section">
+            <h2 style="font-weight: bold; margin-bottom: 1rem;">Journal, Reports & Reminders</h2>
+            
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; border-bottom: 1px solid var(--slate-200); padding-bottom: 0.5rem;">
+                <button class="nav-btn active" onclick="showSubTab('journalNotes')" id="btn-journalNotes">Daily Notes</button>
+                <button class="nav-btn" onclick="showSubTab('journalIncident')" id="btn-journalIncident">Incident Report</button>
+                <button class="nav-btn" onclick="showSubTab('journalReminders')" id="btn-journalReminders">Reminders</button>
+            </div>
+
+            <!-- Notes Subtab -->
+            <div id="journalNotes" class="sub-tab">
+                <div class="card" style="cursor: default;">
+                    <h3>Daily Log</h3>
+                    <textarea id="noteInput" rows="3" placeholder="Log incident or handover note..."></textarea>
+                    <button class="btn-primary" onclick="addNote()">Save Note</button>
+                    <div id="notesList" style="margin-top: 1rem; max-height: 300px; overflow-y: auto;"></div>
+                </div>
+            </div>
+
+            <!-- Incident Subtab -->
+            <div id="journalIncident" class="sub-tab" style="display:none;">
+                <div class="card" style="cursor: default;">
+                    <h3>Create Incident Report</h3>
+                    <div class="grid" style="gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <label style="font-size:0.875rem; font-weight:bold;">Table #</label>
+                            <input type="text" id="incTable" placeholder="e.g. BJJ-05">
+                        </div>
+                        <div>
+                            <label style="font-size:0.875rem; font-weight:bold;">Time</label>
+                            <input type="time" id="incTime">
+                        </div>
+                    </div>
+                    <div>
+                        <label style="font-size:0.875rem; font-weight:bold;">Patron/Staff ID</label>
+                        <input type="text" id="incWho" placeholder="e.g. Patron 880291">
+                    </div>
+                    <div>
+                        <label style="font-size:0.875rem; font-weight:bold;">Issue Description</label>
+                        <textarea id="incDesc" rows="3" placeholder="Describe what happened..."></textarea>
+                    </div>
+                    <div>
+                        <label style="font-size:0.875rem; font-weight:bold;">Action Taken</label>
+                        <textarea id="incAction" rows="2" placeholder="How was it resolved?"></textarea>
+                    </div>
+                    <button class="btn-primary" onclick="generateIncidentReport()">Generate & Copy Report</button>
+                </div>
+            </div>
+
+            <!-- Reminders Subtab -->
+            <div id="journalReminders" class="sub-tab" style="display:none;">
+                <div class="card" style="cursor: default;">
+                    <h3>Set Alarm/Reminder</h3>
+                    <p style="font-size: 0.75rem; color: red;">* Keep app open for alarm</p>
+                    <input type="text" id="remTitle" placeholder="Title (e.g. Safety Drill)">
+                    <input type="time" id="remTime">
+                    <button class="btn-primary" onclick="addReminder()" style="background-color: var(--red-600);">Set Reminder</button>
+                    <div id="reminderList" style="margin-top: 1rem;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- HANDBOOK -->
+        <div id="handbook" class="section">
+            <h2 style="font-weight: bold;">Handbook</h2>
+            <input type="text" id="handbookSearch" placeholder="Search handbook..." onkeyup="renderHandbook()">
+            <div id="handbookContent"></div>
+        </div>
+
+        <!-- CODES -->
+        <div id="codes" class="section">
+            <h2 style="font-weight: bold;">DRS Codes</h2>
+            <input type="text" id="codeSearch" placeholder="Filter codes (e.g. PSD)..." onkeyup="renderCodes()">
+            <div id="codesContent" class="grid"></div>
+        </div>
+
+        <!-- CHECKLISTS -->
+        <div id="checklists" class="section">
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; overflow-x: auto; padding-bottom: 0.5rem;">
+                <button class="btn-primary" onclick="renderChecklist('openingPit')" style="width: auto;">Opening Pit</button>
+                <button class="btn-primary" onclick="renderChecklist('closingPit')" style="width: auto;">Closing Pit</button>
+                <button class="btn-primary" onclick="renderChecklist('closingTable')" style="width: auto;">Closing Table</button>
+            </div>
+            
+            <div class="card" style="cursor: default;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 id="listTitle" style="margin:0;">Select a list</h3>
+                    <div>
+                        <button class="btn-danger" onclick="resetChecklist()" style="background: none; color: var(--red-600); border: 1px solid var(--red-600);">Reset</button>
+                    </div>
+                </div>
+                <div id="checklistItems"></div>
+            </div>
+        </div>
+
+        <!-- TOOLS -->
+        <div id="tools" class="section">
+            <h2 style="font-weight: bold;">Tools</h2>
+            <div class="card" style="cursor: default; margin-bottom: 1.5rem;">
+                <h3 style="display: flex; align-items: center; gap: 0.5rem;">
+                    <svg viewBox="0 0 24 24"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    Theoretical Win Calc
+                </h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+                    <div>
+                        <label style="font-size: 0.875rem;">Plays</label>
+                        <input type="number" id="calcPlays" oninput="calculateWin()" placeholder="60">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.875rem;">Avg Wager ($)</label>
+                        <input type="number" id="calcWager" oninput="calculateWin()" placeholder="100">
+                    </div>
+                    <div>
+                        <label style="font-size: 0.875rem;">Edge (%)</label>
+                        <input type="number" id="calcEdge" oninput="calculateWin()" placeholder="2.7">
+                    </div>
+                </div>
+                <div style="background: var(--slate-50); padding: 1rem; text-align: center; border-radius: 0.5rem; margin-top: 1rem;">
+                    <span style="font-size: 0.875rem; text-transform: uppercase; color: var(--slate-600);">Theoretical Win</span>
+                    <div id="winResult" style="font-size: 2rem; font-weight: bold; color: var(--slate-900);">$0.00</div>
+                </div>
+            </div>
+
+            <div class="card" style="cursor: default;">
+                <h3>Shift Schedule Helper</h3>
+                <div style="font-size: 0.875rem; color: var(--slate-700);">
+                    <div style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid #eee;"><span>PA 1</span><b>1 Hr to Close</b></div>
+                    <div style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid #eee;"><span>PA 2</span><b>40 Mins to Close</b></div>
+                    <div style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid #eee;"><span>PA 3</span><b>20 Mins to Close</b></div>
+                    <div style="display:flex; justify-content:space-between; padding:0.5rem 0; border-bottom:1px solid #eee;"><span>Last 3 (CSP)</span><b>10 Mins to Close</b></div>
+                    <div style="display:flex; justify-content:space-between; padding:0.5rem 0;"><span>Last 3 (All)</span><b>5 Mins to Close</b></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SETTINGS/BACKUP -->
+        <div id="settings" class="section">
+            <h2 style="font-weight: bold;">Data & Backup</h2>
+            <div class="card" style="cursor: default;">
+                <h3>Manage Data</h3>
+                <p style="color: var(--slate-600); font-size: 0.9rem;">
+                    Since this is an offline app, your data is stored in your browser. 
+                    If you clear your browser history, data might be lost. 
+                    <b>Download Backup</b> regularly to keep your data safe.
+                </p>
+                
+                <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 1rem;">
+                    <button class="btn-primary" onclick="downloadData()">
+                        Download Backup (.json)
+                    </button>
+                    
+                    <div style="border-top: 1px solid var(--slate-200); padding-top: 1rem; margin-top: 1rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Restore Data</label>
+                        <input type="file" id="restoreFile" accept=".json" style="margin-bottom: 0.5rem;">
+                        <button class="btn-secondary" onclick="uploadData()">Restore from Backup</button>
+                    </div>
+
+                    <div style="border-top: 1px solid var(--slate-200); padding-top: 1rem; margin-top: 1rem;">
+                         <button class="btn-danger" onclick="clearAllData()">Clear All App Data</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Offline Status -->
+    <div class="status-bar">
+        100% OFFLINE READY
+    </div>
+
+    <script>
+        // --- DATA ---
+        const handbookData = [
+            {t: 'Chapter 1: Introduction', c: 'Welcome to being a Pit Manager... Win % = Plays x Wager x Edge.'},
+            {t: 'Chapter 2: Grooming', c: 'Dark suits, light shirts. Conservative ties. Polish-able shoes.'},
+            {t: 'Chapter 3: DRS', c: 'Dynamic Reporting System. Used to check financials, ratings, and order fills.'},
+            {t: 'Chapter 4: On The Job', c: 'Report to Shift Mgr. SDI (Start Day Increment) > 24hrs international waters.'},
+            {t: 'Chapter 5: Rating', c: 'Green Card = No VIP. VIP88 = VIP. Manual Rating needs PM signature.'},
+            {t: 'Chapter 6: Disputes', c: 'Listen to staff first. Be polite. Call Surveillance (Function Distress).'},
+            {t: 'Chapter 7: Surveillance', c: 'Call for: Disputes, Errors, Chip Machine Open, Royal Flush, Dropped items.'},
+            {t: 'Chapter 8: Discipline', c: 'Coaching vs Counseling. Written Warnings x3 = Dismissal.'},
+            {t: 'Chapter 9: Maintenance', c: 'Clean Quick Draw machines. Report broken equipment.'},
+            {t: 'Chapter 10: Slots', c: 'Random Jackpots: Check Words vs Numbers. Round UP cents.'},
+            {t: 'Chapter 11: Learn to Play', c: 'Promotional exercise. Use Training chips.'},
+            {t: 'Chapter 12: Appraisals', c: 'Every 3 months. Discuss in private.'},
+            {t: 'Chapter 13: Roadmap', c: 'Staff rotation. No spouses supervising each other.'},
+            {t: 'Chapter 15: Duty Mgr', c: 'In port duties: Supplies, Maintenance, Transfer goods.'}
+        ];
+
+        const drsData = [
+            {c:'PSD', n:'Pit Status Display', d:'Overview of tables/staff'},
+            {c:'PDD', n:'Pit Drop Display', d:'Win/Loss, Drop meter'},
+            {c:'PFD', n:'Pit Financial', d:'Last updates'},
+            {c:'UIQ', n:'User Identity', d:'Find staff by ID'},
+            {c:'CIQ', n:'Cust Identity', d:'Find patron info'},
+            {c:'WAY', n:'Where Are You', d:'Locate staff/player'},
+            {c:'FOUT', n:'Force Out', d:'Log out user manually'},
+            {c:'TU', n:'Update Table', d:'Enter update'},
+            {c:'RR', n:'Request Return', d:'Return inventory to cage'},
+            {c:'RI', n:'Request Inventory', d:'Get float from cage'},
+            {c:'CT', n:'Close Table', d:'Close table on TU3'},
+            {c:'ALM', n:'Coverage', d:'Alert Surveillance (Standard)'},
+            {c:'DIS', n:'Distress', d:'Alert Surveillance (Urgent)'}
+        ];
+
+        const checklists = {
+            openingPit: ['Check Drop Boxes', 'Turn on Pit Computer', 'Check TU3s', 'Table Min Signs', 'Brief Staff', 'Unlock Floats', 'Count Pre-made shoes', 'Issue Cards', 'Open Chip Machines'],
+            closingPit: ['Order Fills/Credits', 'PA Announcements', 'Distribute TIS', 'Count Pre-made shoes', 'Call Last 3 Games', 'Clear Chip Machines', 'Balance Jackpots', 'Check TIS Closers', 'Lock Floats'],
+            closingTable: ['Fill TIS-Closer', 'Check Inspector PDD', 'Sit at table to verify', 'Level Stacks', 'No spacers', 'Sign TIS', 'Verify TU3 CTR', 'Press Send']
+        };
+
+        // --- APP LOGIC ---
+
+        // Tabs
+        function switchTab(tabId) {
+            document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            
+            document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+            const btn = document.querySelector(`.nav-btn[onclick="switchTab('${tabId}')"]`);
+            if(btn) btn.classList.add('active');
+
+            if (window.innerWidth <= 768) {
+                document.getElementById('navLinks').classList.remove('active');
+            }
+        }
+
+        function showSubTab(tabId) {
+            document.querySelectorAll('.sub-tab').forEach(el => el.style.display = 'none');
+            document.getElementById(tabId).style.display = 'block';
+            
+            // Basic active state visual
+            const btns = ['journalNotes', 'journalIncident', 'journalReminders'];
+            btns.forEach(id => {
+                const btn = document.getElementById('btn-'+id);
+                if(btn) btn.style.borderBottom = id === tabId ? '2px solid var(--yellow-400)' : 'none';
+                if(btn) btn.style.color = id === tabId ? 'var(--yellow-400)' : 'var(--slate-300)';
+            });
+        }
+        // Initialize subtab style
+        setTimeout(() => showSubTab('journalNotes'), 100);
+
+        function toggleMenu() {
+            document.getElementById('navLinks').classList.toggle('active');
+        }
+
+        // Handbook
+        function renderHandbook() {
+            const query = document.getElementById('handbookSearch').value.toLowerCase();
+            const container = document.getElementById('handbookContent');
+            container.innerHTML = '';
+            
+            handbookData.forEach(item => {
+                if(item.t.toLowerCase().includes(query) || item.c.toLowerCase().includes(query)) {
+                    const div = document.createElement('div');
+                    div.className = 'card';
+                    div.style.marginBottom = '1rem';
+                    div.innerHTML = `<h3 style="margin-top:0">${item.t}</h3><p>${item.c}</p>`;
+                    container.appendChild(div);
+                }
+            });
+        }
+
+        // Codes
+        function renderCodes() {
+            const query = document.getElementById('codeSearch').value.toLowerCase();
+            const container = document.getElementById('codesContent');
+            container.innerHTML = '';
+            
+            drsData.forEach(item => {
+                if(item.c.toLowerCase().includes(query) || item.n.toLowerCase().includes(query)) {
+                    const div = document.createElement('div');
+                    div.className = 'card';
+                    div.innerHTML = `<div style="display:flex; justify-content:space-between"><strong style="color:purple; background:#f3e8ff; padding:2px 6px; border-radius:4px;">${item.c}</strong></div><h4>${item.n}</h4><p style="font-size:0.875rem">${item.d}</p>`;
+                    container.appendChild(div);
+                }
+            });
+        }
+
+        // Checklists
+        let currentListId = 'openingPit';
+        let checkedItems = JSON.parse(localStorage.getItem('pb_checks') || '{}');
+
+        function renderChecklist(listId) {
+            currentListId = listId;
+            document.getElementById('listTitle').innerText = listId === 'openingPit' ? 'Opening Pit' : listId === 'closingPit' ? 'Closing Pit' : 'Closing Table';
+            const container = document.getElementById('checklistItems');
+            container.innerHTML = '';
+            
+            checklists[listId].forEach((item, index) => {
+                const key = `${listId}-${index}`;
+                const isChecked = checkedItems[key];
+                
+                const div = document.createElement('div');
+                div.className = `list-item ${isChecked ? 'checked' : ''}`;
+                div.onclick = () => toggleCheck(key);
+                div.innerHTML = `
+                    <div style="width:20px; height:20px; border:1px solid #ccc; background:${isChecked ? '#16a34a' : 'white'}; display:flex; align-items:center; justify-content:center; border-radius:4px;">
+                        ${isChecked ? '<span style="color:white; text-decoration:none">✓</span>' : ''}
+                    </div>
+                    <span>${item}</span>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function toggleCheck(key) {
+            if (checkedItems[key]) delete checkedItems[key];
+            else checkedItems[key] = true;
+            localStorage.setItem('pb_checks', JSON.stringify(checkedItems));
+            renderChecklist(currentListId);
+        }
+
+        function resetChecklist() {
+            if(!confirm('Reset this list?')) return;
+            Object.keys(checkedItems).forEach(key => {
+                if(key.startsWith(currentListId)) delete checkedItems[key];
+            });
+            localStorage.setItem('pb_checks', JSON.stringify(checkedItems));
+            renderChecklist(currentListId);
+        }
+
+        // Journal & Reports
+        let notes = JSON.parse(localStorage.getItem('pb_notes') || '[]');
+        let reminders = JSON.parse(localStorage.getItem('pb_reminders') || '[]');
+
+        function renderNotes() {
+            const container = document.getElementById('notesList');
+            container.innerHTML = '';
+            notes.forEach(note => {
+                const div = document.createElement('div');
+                div.style.background = '#f8fafc';
+                div.style.padding = '0.5rem';
+                div.style.marginBottom = '0.5rem';
+                div.style.borderRadius = '0.5rem';
+                div.style.border = '1px solid #e2e8f0';
+                div.innerHTML = `<p style="margin:0; font-size:0.9rem">${note.text}</p><div style="display:flex; justify-content:space-between; margin-top:0.5rem"><small style="color:#94a3b8">${note.date}</small><button onclick="deleteNote(${note.id})" style="color:red; background:none; border:none; cursor:pointer;">Del</button></div>`;
+                container.appendChild(div);
+            });
+        }
+
+        function addNote() {
+            const txt = document.getElementById('noteInput').value;
+            if(!txt) return;
+            notes.unshift({id: Date.now(), text: txt, date: new Date().toLocaleString()});
+            localStorage.setItem('pb_notes', JSON.stringify(notes));
+            document.getElementById('noteInput').value = '';
+            renderNotes();
+        }
+
+        function deleteNote(id) {
+            notes = notes.filter(n => n.id !== id);
+            localStorage.setItem('pb_notes', JSON.stringify(notes));
+            renderNotes();
+        }
+
+        function generateIncidentReport() {
+            const table = document.getElementById('incTable').value;
+            const time = document.getElementById('incTime').value;
+            const who = document.getElementById('incWho').value;
+            const desc = document.getElementById('incDesc').value;
+            const action = document.getElementById('incAction').value;
+
+            if(!table || !desc) {
+                alert('Please enter at least Table # and Description');
+                return;
+            }
+
+            const report = `🚨 INCIDENT REPORT\n\n📅 Date: ${new Date().toLocaleDateString()}\n📍 Table: ${table}\n⏰ Time: ${time}\n👤 ID: ${who}\n\n📝 Issue:\n${desc}\n\n✅ Action Taken:\n${action}`;
+
+            // Save to notes automatically
+            notes.unshift({id: Date.now(), text: `[REPORT] ${table} - ${desc}`, date: new Date().toLocaleString()});
+            localStorage.setItem('pb_notes', JSON.stringify(notes));
+            renderNotes();
+
+            // Copy to clipboard
+            navigator.clipboard.writeText(report).then(() => {
+                alert('Report generated and copied to Clipboard! You can paste it into Viber/Telegram.');
+            });
+        }
+
+        function renderReminders() {
+            const container = document.getElementById('reminderList');
+            container.innerHTML = '';
+            reminders.forEach(rem => {
+                const div = document.createElement('div');
+                div.className = 'list-item';
+                div.style.justifyContent = 'space-between';
+                if(rem.alerted) div.style.background = '#fef2f2';
+                div.innerHTML = `<div><strong>${rem.title}</strong> <br><small>${rem.time}</small></div> <button onclick="deleteReminder(${rem.id})" style="color:red; background:none; border:none;">✕</button>`;
+                container.appendChild(div);
+            });
+        }
+
+        function addReminder() {
+            const title = document.getElementById('remTitle').value;
+            const time = document.getElementById('remTime').value;
+            if(!title || !time) return;
+            reminders.push({id: Date.now(), title, time, alerted: false});
+            localStorage.setItem('pb_reminders', JSON.stringify(reminders));
+            document.getElementById('remTitle').value = '';
+            document.getElementById('remTime').value = '';
+            renderReminders();
+        }
+
+        function deleteReminder(id) {
+            reminders = reminders.filter(r => r.id !== id);
+            localStorage.setItem('pb_reminders', JSON.stringify(reminders));
+            renderReminders();
+        }
+
+        // Alarm Check
+        setInterval(() => {
+            const now = new Date();
+            const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+            let changed = false;
+            reminders.forEach(rem => {
+                if (rem.time === currentTime && !rem.alerted) {
+                    alert(`⏰ ALARM: ${rem.title}`);
+                    rem.alerted = true;
+                    changed = true;
+                }
+            });
+            if(changed) {
+                localStorage.setItem('pb_reminders', JSON.stringify(reminders));
+                renderReminders();
+            }
+        }, 15000); // Check every 15s
+
+        // Calculator
+        function calculateWin() {
+            const p = parseFloat(document.getElementById('calcPlays').value) || 0;
+            const w = parseFloat(document.getElementById('calcWager').value) || 0;
+            const e = parseFloat(document.getElementById('calcEdge').value) || 0;
+            const result = p * w * (e / 100);
+            document.getElementById('winResult').innerText = '$' + result.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        }
+
+        // Backup & Restore
+        function downloadData() {
+            const data = {
+                checks: checkedItems,
+                notes: notes,
+                reminders: reminders,
+                date: new Date().toISOString()
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `pitboss_backup_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function uploadData() {
+            const fileInput = document.getElementById('restoreFile');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a backup file first.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if(confirm('This will replace all current data. Are you sure?')) {
+                        checkedItems = data.checks || {};
+                        notes = data.notes || [];
+                        reminders = data.reminders || [];
+                        
+                        localStorage.setItem('pb_checks', JSON.stringify(checkedItems));
+                        localStorage.setItem('pb_notes', JSON.stringify(notes));
+                        localStorage.setItem('pb_reminders', JSON.stringify(reminders));
+                        
+                        // Refresh UI
+                        renderChecklist(currentListId);
+                        renderNotes();
+                        renderReminders();
+                        alert('Data restored successfully!');
+                    }
+                } catch(err) {
+                    alert('Error reading file. Please choose a valid JSON backup.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function clearAllData() {
+            if(confirm('WARNING: This will delete ALL notes, checklists and reminders forever. Are you sure?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        // Init
+        renderHandbook();
+        renderCodes();
+        renderChecklist('openingPit');
+        renderNotes();
+        renderReminders();
+
+    </script>
+</body>
+</html>
